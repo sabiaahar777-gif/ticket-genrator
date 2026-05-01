@@ -16,8 +16,8 @@ button:hover{opacity:0.9}
 .blue{background:#2196F3;color:#fff}
 .dark{background:#333;color:#fff}
 .red{background:#e74c3c;color:#fff}
-.ticket{font-family:monospace;background:#fff;border:2px dashed #000;padding:15px;margin-top:20px;text-align:left}
-.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;color:#fff}
+.ticket{font-family:monospace;background:#fff;border:2px dashed #000;padding:15px;margin-top:20px}
+.topbar{display:flex;justify-content:space-between;color:#fff}
 
 @media print {
 body * { visibility: hidden; }
@@ -79,11 +79,13 @@ body * { visibility: hidden; }
 
 <script>
 let currentUser=null;
+
 function register(){
 let data={tname:tname.value,taddress:taddress.value,ttype:ttype.value,user:user.value,pass:pass.value};
 localStorage.setItem(user.value,JSON.stringify(data));
 alert("Registered!");
 }
+
 function login(){
 let data=JSON.parse(localStorage.getItem(luser.value));
 if(data && data.pass===lpass.value){
@@ -95,40 +97,69 @@ info.innerHTML=`<b>${data.tname}</b><br>${data.taddress}`;
 loadTypes();
 }else alert("Invalid login");
 }
+
 function logout(){localStorage.removeItem("loggedIn");location.reload();}
+
 function loadTypes(){
-let map={Bus:["AC","Express","Ordinary"],Truck:["Heavy","Medium","Light"],Taxi:["AC","Non-AC","Mini"],Van:["AC","Non-AC","Cargo"]};
-let list=map[currentUser.ttype];
-type.innerHTML=list.map(x=>`<option>${x}</option>`).join("");
+let map={
+Bus:["AC","Express","Ordinary"],
+Truck:["Heavy","Medium","Light"],
+Taxi:["AC","Non-AC","Mini"],
+Van:["AC","Non-AC","Cargo"]
+};
+type.innerHTML=map[currentUser.ttype].map(x=>`<option>${x}</option>`).join("");
 }
+
 function getRate(t,cat){
-let rates={
+const rates={
 Bus:{AC:2,Express:1.5,Ordinary:1},
 Truck:{Heavy:40,Medium:25,Light:15},
 Taxi:{AC:18,"Non-AC":12,Mini:10},
 Van:{AC:15,"Non-AC":12,Cargo:20}
 };
-return rates[t][cat];
-},Truck:{Heavy:40,Medium:25,Light:15},Taxi:{AC:18,"Non-AC":12,Mini:10},Van:{AC:15,"Non-AC":12,Cargo:20}};
-return rates[t][cat];
+return rates[t][cat] || 0;
 }
+
 function generate(){
 let id="TKT"+Math.floor(Math.random()*100000);
 let d=new Date();
-let dist=distance.value;
+let dist=parseFloat(distance.value)||0;
 let rate=getRate(currentUser.ttype,type.value);
 let fare=dist*rate;
-let html=`====================================<br>${currentUser.tname}<br>${currentUser.taddress}<br>====================================<br>Type : ${currentUser.ttype} (${type.value})<br>------------------------------------<br>Ticket No : ${id}<br>Date : ${d.toLocaleDateString()}<br>Time : ${d.toLocaleTimeString()}<br>------------------------------------<br>From : ${from.value}<br>To : ${to.value}<br>------------------------------------<br>Distance : ${dist} KM<br>Fare : ₹${fare}<br>------------------------------------<br>Happy Journey<br>====================================`;
+
+let html=`====================================<br>
+${currentUser.tname}<br>
+${currentUser.taddress}<br>
+====================================<br>
+Type : ${currentUser.ttype} (${type.value})<br>
+------------------------------------<br>
+Ticket No : ${id}<br>
+Date : ${d.toLocaleDateString()}<br>
+Time : ${d.toLocaleTimeString()}<br>
+------------------------------------<br>
+From : ${from.value}<br>
+To : ${to.value}<br>
+------------------------------------<br>
+Distance : ${dist} KM<br>
+Fare : ₹${fare}<br>
+------------------------------------<br>
+Happy Journey<br>
+====================================`;
+
 ticket.innerHTML=html;
+
 let rec=JSON.parse(localStorage.getItem("records")||"[]");
 rec.push({id,from:from.value,to:to.value,type:type.value,fare,date:d.toLocaleString()});
 localStorage.setItem("records",JSON.stringify(rec));
 }
+
 function nextTicket(){ticket.innerHTML="";}
+
 function viewRecords(){
 let rec=JSON.parse(localStorage.getItem("records")||"[]");
 records.innerHTML="<h3>Records</h3>"+rec.map(r=>`${r.id} | ${r.from}-${r.to} | ₹${r.fare}<br>`).join("");
 }
+
 function printRecords(){
 let rec=JSON.parse(localStorage.getItem("records")||"[]");
 let content="Records\n----------------------\n";
@@ -137,6 +168,7 @@ let win=window.open("","","width=600,height=600");
 win.document.write("<pre>"+content+"</pre>");
 win.print();
 }
+
 function exportCSV(){
 let rec=JSON.parse(localStorage.getItem("records")||"[]");
 let csv="ID,From,To,Fare\n";
@@ -147,6 +179,7 @@ a.href=URL.createObjectURL(blob);
 a.download="records.csv";
 a.click();
 }
+
 let saved=localStorage.getItem("loggedIn");
 if(saved){
 luser.value=saved;
