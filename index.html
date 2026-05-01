@@ -102,7 +102,7 @@ let list=map[currentUser.ttype];
 type.innerHTML=list.map(x=>`<option>${x}</option>`).join("");
 }
 function getRate(t,cat){
-let rates={Bus:{AC:2,Express:1.5,Ordinary:1},Truck:{Heavy:3,Medium:2.5,Light:2},Taxi:{AC:3,"Non-AC":2,Mini:1.5},Van:{AC:2.5,"Non-AC":2,Cargo:3}};
+let rates={Bus:{AC:2,Express:1.5,Ordinary:1},Truck:{Heavy:40,Medium:25,Light:15},Taxi:{AC:18,"Non-AC":12,Mini:10},Van:{AC:15,"Non-AC":12,Cargo:20}};
 return rates[t][cat];
 }
 function generate(){
