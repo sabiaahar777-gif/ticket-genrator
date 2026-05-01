@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Online Ticket</title>
+<style>
+body{font-family:Segoe UI,Arial;background:linear-gradient(135deg,#667eea,#764ba2);margin:0;color:#333}
+.container{max-width:900px;margin:auto;padding:20px}
+h1{color:#fff;text-align:center;margin-bottom:20px}
+.card{background:#fff;padding:20px;border-radius:15px;box-shadow:0 10px 25px rgba(0,0,0,0.2);margin-bottom:20px}
+input,select{width:100%;padding:12px;margin:8px 0;border-radius:8px;border:1px solid #ccc}
+button{padding:12px;border:none;border-radius:8px;margin:5px;cursor:pointer;font-weight:bold}
+button:hover{opacity:0.9}
+.primary{background:#4CAF50;color:#fff}
+.blue{background:#2196F3;color:#fff}
+.dark{background:#333;color:#fff}
+.red{background:#e74c3c;color:#fff}
+.ticket{font-family:monospace;background:#fff;border:2px dashed #000;padding:15px;margin-top:20px;text-align:left}
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;color:#fff}
+
+@media print {
+body * { visibility: hidden; }
+.ticket, .ticket * { visibility: visible; }
+.ticket { position: absolute; top: 0; left: 0; width: 100%; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>🎫 Online Ticket</h1>
+
+<div id="auth" class="card">
+<h2>Register</h2>
+<input id="tname" placeholder="Transport Name">
+<input id="taddress" placeholder="Transport Address">
+<select id="ttype">
+<option>Bus</option><option>Truck</option><option>Taxi</option><option>Van</option>
+</select>
+<input id="user" placeholder="Username">
+<input id="pass" type="password" placeholder="Password">
+<button class="primary" onclick="register()">Register</button>
+<hr>
+<h2>Login</h2>
+<input id="luser" placeholder="Username">
+<input id="lpass" type="password" placeholder="Password">
+<button class="blue" onclick="login()">Login</button>
+</div>
+
+<div id="app" style="display:none">
+<div class="topbar">
+<div id="info"></div>
+<button class="red" onclick="logout()">Logout</button>
+</div>
+
+<div class="card">
+<h3>Generate Ticket</h3>
+<input id="from" placeholder="From">
+<input id="to" placeholder="To">
+<select id="type"></select>
+<input id="distance" type="number" placeholder="Distance (km)">
+<button class="primary" onclick="generate()">Generate Ticket</button>
+</div>
+
+<div id="ticket" class="ticket"></div>
+
+<div class="card">
+<button class="dark" onclick="window.print()">Print Ticket</button>
+<button class="blue" onclick="nextTicket()">Next Ticket</button>
+<button class="primary" onclick="viewRecords()">View Records</button>
+<button class="dark" onclick="printRecords()">Print Records</button>
+<button class="blue" onclick="exportCSV()">Export Records</button>
+</div>
+
+<div id="records" class="card"></div>
+</div>
+
+</div>
+
+<script>
+let currentUser=null;
+function register(){
+let data={tname:tname.value,taddress:taddress.value,ttype:ttype.value,user:user.value,pass:pass.value};
+localStorage.setItem(user.value,JSON.stringify(data));
+alert("Registered!");
+}
+function login(){
+let data=JSON.parse(localStorage.getItem(luser.value));
+if(data && data.pass===lpass.value){
+currentUser=data;
+localStorage.setItem("loggedIn",luser.value);
+document.getElementById("auth").style.display="none";
+document.getElementById("app").style.display="block";
+info.innerHTML=`<b>${data.tname}</b><br>${data.taddress}`;
+loadTypes();
+}else alert("Invalid login");
+}
+function logout(){localStorage.removeItem("loggedIn");location.reload();}
+function loadTypes(){
+let map={Bus:["AC","Express","Ordinary"],Truck:["Heavy","Medium","Light"],Taxi:["AC","Non-AC","Mini"],Van:["AC","Non-AC","Cargo"]};
+let list=map[currentUser.ttype];
+type.innerHTML=list.map(x=>`<option>${x}</option>`).join("");
+}
+function getRate(t,cat){
+let rates={Bus:{AC:2,Express:1.5,Ordinary:1},Truck:{Heavy:3,Medium:2.5,Light:2},Taxi:{AC:3,"Non-AC":2,Mini:1.5},Van:{AC:2.5,"Non-AC":2,Cargo:3}};
+return rates[t][cat];
+}
+function generate(){
+let id="TKT"+Math.floor(Math.random()*100000);
+let d=new Date();
+let dist=distance.value;
+let rate=getRate(currentUser.ttype,type.value);
+let fare=dist*rate;
+let html=`====================================<br>${currentUser.tname}<br>${currentUser.taddress}<br>====================================<br>Type : ${currentUser.ttype} (${type.value})<br>------------------------------------<br>Ticket No : ${id}<br>Date : ${d.toLocaleDateString()}<br>Time : ${d.toLocaleTimeString()}<br>------------------------------------<br>From : ${from.value}<br>To : ${to.value}<br>------------------------------------<br>Distance : ${dist} KM<br>Fare : ₹${fare}<br>------------------------------------<br>Happy Journey<br>====================================`;
+ticket.innerHTML=html;
+let rec=JSON.parse(localStorage.getItem("records")||"[]");
+rec.push({id,from:from.value,to:to.value,type:type.value,fare,date:d.toLocaleString()});
+localStorage.setItem("records",JSON.stringify(rec));
+}
+function nextTicket(){ticket.innerHTML="";}
+function viewRecords(){
+let rec=JSON.parse(localStorage.getItem("records")||"[]");
+records.innerHTML="<h3>Records</h3>"+rec.map(r=>`${r.id} | ${r.from}-${r.to} | ₹${r.fare}<br>`).join("");
+}
+function printRecords(){
+let rec=JSON.parse(localStorage.getItem("records")||"[]");
+let content="Records\n----------------------\n";
+rec.forEach(r=>{content+=`${r.id} | ${r.from}-${r.to} | ₹${r.fare}\n`;});
+let win=window.open("","","width=600,height=600");
+win.document.write("<pre>"+content+"</pre>");
+win.print();
+}
+function exportCSV(){
+let rec=JSON.parse(localStorage.getItem("records")||"[]");
+let csv="ID,From,To,Fare\n";
+rec.forEach(r=>csv+=`${r.id},${r.from},${r.to},${r.fare}\n`);
+let blob=new Blob([csv]);
+let a=document.createElement("a");
+a.href=URL.createObjectURL(blob);
+a.download="records.csv";
+a.click();
+}
+let saved=localStorage.getItem("loggedIn");
+if(saved){
+luser.value=saved;
+let data=JSON.parse(localStorage.getItem(saved));
+currentUser=data;
+document.getElementById("auth").style.display="none";
+document.getElementById("app").style.display="block";
+info.innerHTML=`<b>${data.tname}</b><br>${data.taddress}`;
+loadTypes();
+}
+</script>
+</body>
+</html>
